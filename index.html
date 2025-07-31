@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Nicolai im Gefängnis</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: black;
+    }
+    #gameContainer {
+      touch-action: none;
+    }
+    .touch-button {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      background: rgba(255,255,255,0.2);
+      border: 2px solid white;
+      border-radius: 10px;
+    }
+    #leftBtn { bottom: 20px; left: 20px; }
+    #rightBtn { bottom: 20px; left: 100px; }
+    #jumpBtn { bottom: 20px; right: 20px; }
+    #gameOver {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%,-50%);
+      color: white;
+      font-size: 48px;
+      display: none;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="gameContainer"></div>
+  <div id="leftBtn" class="touch-button"></div>
+  <div id="rightBtn" class="touch-button"></div>
+  <div id="jumpBtn" class="touch-button"></div>
+  <div id="gameOver">Game Over</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+  <script>
+    let cursors;
+    let player;
+    let platforms;
+    let enemies;
+    let left = false;
+    let right = false;
+    let jump = false;
+
+    const config = {
+      type: Phaser.AUTO,
+      width: 800,
+      height: 600,
+      backgroundColor: '#1d1d1d',
+      parent: 'gameContainer',
+      physics: {
+        default: 'arcade',
+        arcade: {
+          gravity: { y: 600 },
+          debug: false
+        }
+      },
+      scene: {
+        preload,
+        create,
+        update
+      }
+    };
+
+    const game = new Phaser.Game(config);
+
+    function preload() {
+      this.load.image('ground', 'https://labs.phaser.io/assets/sprites/platform.png');
+      this.load.spritesheet('nicolai', 'nicolai.png', { frameWidth: 32, frameHeight: 48 });
+      this.load.spritesheet('gefangener', 'gefangener.png', { frameWidth: 32, frameHeight: 48 });
+    }
+
+    function create() {
+      platforms = this.physics.add.staticGroup();
+      platforms.create(400, 580, 'ground').setScale(2).refreshBody();
+      platforms.create(600, 450, 'ground');
+      platforms.create(50, 350, 'ground');
+
+      player = this.physics.add.sprite(100, 500, 'nicolai');
+      player.setBounce(0.2);
+      player.setCollideWorldBounds(true);
+      this.physics.add.collider(player, platforms);
+
+      enemies = this.physics.add.group();
+      const gegner = enemies.create(500, 400, 'gefangener');
+      gegner.setVelocityX(50);
+      gegner.setBounce(1, 0);
+      gegner.setCollideWorldBounds(true);
+      this.physics.add.collider(enemies, platforms);
+      this.physics.add.overlap(player, enemies, hitEnemy, null, this);
+
+      cursors = this.input.keyboard.createCursorKeys();
+
+      document.getElementById("leftBtn").addEventListener("touchstart", () => left = true);
+      document.getElementById("leftBtn").addEventListener("touchend", () => left = false);
+      document.getElementById("rightBtn").addEventListener("touchstart", () => right = true);
+      document.getElementById("rightBtn").addEventListener("touchend", () => right = false);
+      document.getElementById("jumpBtn").addEventListener("touchstart", () => jump = true);
+      document.getElementById("jumpBtn").addEventListener("touchend", () => jump = false);
+    }
+
+    function update() {
+      if (!player.active) return;
+
+      player.setVelocityX(0);
+
+      if (cursors.left.isDown || left) {
+        player.setVelocityX(-160);
+      } else if (cursors.right.isDown || right) {
+        player.setVelocityX(160);
+      }
+
+      if ((cursors.up.isDown || jump) && player.body.touching.down) {
+        player.setVelocityY(-400);
+      }
+    }
+
+    function hitEnemy() {
+      player.setTint(0xff0000);
+      player.active = false;
+      this.physics.pause();
+      document.getElementById("gameOver").style.display = 'block';
+    }
+  </script>
+</body>
+</html>
